@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eva的2026年1月行动清单 ✨ - 增强版</title>
+    <title>Eva的2026年1月行动清单 ✨</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -123,7 +123,38 @@
             }, 3000);
         }
 
-        // 默认数据结构
+        // LocalStorage utilities (替代window.storage)
+        const storage = {
+            get: (key) => {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value ? JSON.parse(value) : null;
+                } catch (error) {
+                    console.error('Error reading from localStorage:', error);
+                    return null;
+                }
+            },
+            set: (key, value) => {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    return true;
+                } catch (error) {
+                    console.error('Error writing to localStorage:', error);
+                    return false;
+                }
+            },
+            remove: (key) => {
+                try {
+                    localStorage.removeItem(key);
+                    return true;
+                } catch (error) {
+                    console.error('Error removing from localStorage:', error);
+                    return false;
+                }
+            }
+        };
+
+        // 默认数据
         const DEFAULT_WEEKS = [
             {
                 id: 'week1',
@@ -185,68 +216,64 @@
             const [notes, setNotes] = useState({});
             const [loading, setLoading] = useState(true);
             
-            // 可自定义的数据
             const [dailyRoutines, setDailyRoutines] = useState(DEFAULT_DAILY_ROUTINES);
             const [weeklyTasks, setWeeklyTasks] = useState(DEFAULT_WEEKLY_TASKS);
             const [specialEvents, setSpecialEvents] = useState(DEFAULT_SPECIAL_EVENTS);
             
-            // Modal states
             const [showAddTaskModal, setShowAddTaskModal] = useState(false);
             const [showAddEventModal, setShowAddEventModal] = useState(false);
             const [showImportExportModal, setShowImportExportModal] = useState(false);
             const [newTask, setNewTask] = useState({ text: '', category: 'custom' });
             const [newEvent, setNewEvent] = useState({ date: currentDate, text: '', category: 'custom', priority: false });
 
-            // 从storage加载数据
+            // 从localStorage加载数据
             useEffect(() => {
                 loadData();
             }, []);
 
-            const loadData = async () => {
+            const loadData = () => {
                 try {
-                    const dailyResult = await window.storage.get('eva-jan-daily');
-                    const weeklyResult = await window.storage.get('eva-jan-weekly');
-                    const specialResult = await window.storage.get('eva-jan-special');
-                    const notesResult = await window.storage.get('eva-jan-notes');
-                    const batteryResult = await window.storage.get('eva-jan-battery');
+                    const dailyData = storage.get('eva-jan-daily');
+                    const weeklyData = storage.get('eva-jan-weekly');
+                    const specialData = storage.get('eva-jan-special');
+                    const notesData = storage.get('eva-jan-notes');
+                    const batteryData = storage.get('eva-jan-battery');
+                    const routinesData = storage.get('eva-jan-routines');
+                    const tasksData = storage.get('eva-jan-tasks');
+                    const eventsData = storage.get('eva-jan-events');
                     
-                    // 加载自定义数据
-                    const routinesResult = await window.storage.get('eva-jan-routines');
-                    const tasksResult = await window.storage.get('eva-jan-tasks');
-                    const eventsResult = await window.storage.get('eva-jan-events');
+                    if (dailyData) setDailyChecks(dailyData);
+                    if (weeklyData) setWeeklyProgress(weeklyData);
+                    if (specialData) setSpecialCompleted(specialData);
+                    if (notesData) setNotes(notesData);
+                    if (batteryData !== null) setBatteryLevel(batteryData);
+                    if (routinesData) setDailyRoutines(routinesData);
+                    if (tasksData) setWeeklyTasks(tasksData);
+                    if (eventsData) setSpecialEvents(eventsData);
                     
-                    if (dailyResult?.value) setDailyChecks(JSON.parse(dailyResult.value));
-                    if (weeklyResult?.value) setWeeklyProgress(JSON.parse(weeklyResult.value));
-                    if (specialResult?.value) setSpecialCompleted(JSON.parse(specialResult.value));
-                    if (notesResult?.value) setNotes(JSON.parse(notesResult.value));
-                    if (batteryResult?.value) setBatteryLevel(JSON.parse(batteryResult.value));
-                    
-                    if (routinesResult?.value) setDailyRoutines(JSON.parse(routinesResult.value));
-                    if (tasksResult?.value) setWeeklyTasks(JSON.parse(tasksResult.value));
-                    if (eventsResult?.value) setSpecialEvents(JSON.parse(eventsResult.value));
+                    console.log('数据加载成功！');
                 } catch (error) {
-                    console.log('First time loading, starting fresh');
+                    console.error('加载数据失败:', error);
                 }
                 setLoading(false);
             };
 
-            const saveData = async () => {
+            const saveData = () => {
                 try {
-                    await window.storage.set('eva-jan-daily', JSON.stringify(dailyChecks));
-                    await window.storage.set('eva-jan-weekly', JSON.stringify(weeklyProgress));
-                    await window.storage.set('eva-jan-special', JSON.stringify(specialCompleted));
-                    await window.storage.set('eva-jan-notes', JSON.stringify(notes));
-                    await window.storage.set('eva-jan-battery', JSON.stringify(batteryLevel));
+                    storage.set('eva-jan-daily', dailyChecks);
+                    storage.set('eva-jan-weekly', weeklyProgress);
+                    storage.set('eva-jan-special', specialCompleted);
+                    storage.set('eva-jan-notes', notes);
+                    storage.set('eva-jan-battery', batteryLevel);
+                    storage.set('eva-jan-routines', dailyRoutines);
+                    storage.set('eva-jan-tasks', weeklyTasks);
+                    storage.set('eva-jan-events', specialEvents);
                     
-                    // 保存自定义数据
-                    await window.storage.set('eva-jan-routines', JSON.stringify(dailyRoutines));
-                    await window.storage.set('eva-jan-tasks', JSON.stringify(weeklyTasks));
-                    await window.storage.set('eva-jan-events', JSON.stringify(specialEvents));
-                    
+                    console.log('数据保存成功！');
                     showToast('数据已自动保存 ✓', 'success');
                 } catch (error) {
-                    console.error('Save failed:', error);
-                    showToast('保存失败，请重试', 'error');
+                    console.error('保存数据失败:', error);
+                    showToast('保存失败，请检查浏览器设置', 'error');
                 }
             };
 
@@ -348,8 +375,9 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `eva-checklist-backup-${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `eva-checklist-${new Date().toISOString().split('T')[0]}.json`;
                 a.click();
+                URL.revokeObjectURL(url);
                 showToast('数据已导出！', 'success');
             };
 
@@ -442,7 +470,7 @@
 
             return (
                 <div className="max-w-6xl mx-auto">
-                    {/* Header with Export/Import buttons */}
+                    {/* Header */}
                     <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
                         <div className="flex items-center justify-between mb-2">
                             <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
@@ -463,7 +491,9 @@
                                 </button>
                             </div>
                         </div>
-                        <p className="text-gray-600 mb-4 text-sm">恢复 → 规划 → 启动 → 成长 | 数据自动保存中...</p>
+                        <p className="text-gray-600 mb-4 text-sm">
+                            恢复 → 规划 → 启动 → 成长 | 使用localStorage自动保存 ✓
+                        </p>
                         
                         {/* Progress Overview */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -790,7 +820,7 @@
                         </p>
                     </div>
 
-                    {/* Add Task Modal */}
+                    {/* Modals */}
                     <div className={`modal ${showAddTaskModal ? 'active' : ''}`} onClick={() => setShowAddTaskModal(false)}>
                         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
                             <h3 className="text-xl md:text-2xl font-bold mb-4">添加每日任务</h3>
@@ -818,7 +848,6 @@
                         </div>
                     </div>
 
-                    {/* Add Event Modal */}
                     <div className={`modal ${showAddEventModal ? 'active' : ''}`} onClick={() => setShowAddEventModal(false)}>
                         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
                             <h3 className="text-xl md:text-2xl font-bold mb-4">添加特殊事项</h3>
@@ -871,7 +900,6 @@
                         </div>
                     </div>
 
-                    {/* Import/Export Modal */}
                     <div className={`modal ${showImportExportModal ? 'active' : ''}`} onClick={() => setShowImportExportModal(false)}>
                         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
                             <h3 className="text-xl md:text-2xl font-bold mb-4">数据备份与导入</h3>
